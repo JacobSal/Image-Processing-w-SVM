@@ -15,7 +15,11 @@ from sklearn.model_selection import cross_val_score, train_test_split, learning_
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler, LabelEncoder
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 from sklearn.metrics import plot_confusion_matrix, auc, roc_curve, roc_auc_score, accuracy_score, classification_report
+=======
+from sklearn.metrics import confusion_matrix, auc, roc_curve, roc_auc_score, accuracy_score, classification_report
+>>>>>>> Stashed changes
 =======
 from sklearn.metrics import confusion_matrix, auc, roc_curve, roc_auc_score, accuracy_score, classification_report
 >>>>>>> Stashed changes
@@ -27,10 +31,13 @@ from sklearn.neighbors import KNeighborsClassifier
 import pandas as pd
 import xgboost as xgb
 from xgboost import XGBClassifier
+<<<<<<< Updated upstream
 
 import pandas as pd
 import xgboost as xgb
 from xgboost import XGBClassifier
+=======
+>>>>>>> Stashed changes
 
 import SVM
 import Filters
@@ -1128,9 +1135,263 @@ SVM.overlay_predictions(image, train_bool, predictions, y_test, ind_test,domains
 print('KNN:')
 pipe_knn = make_pipeline(RobustScaler(),KNeighborsClassifier())
 
+
+
+##### RANDOM FOREST ALGORITHM #####
+
+print('Random Forest:')
+
+
+##Random Forest with Optimal HyperParameters
+print("starting modeling career...")
+coef = [671,10,68,3,650,137,462]
+RFmodel = RandomForestClassifier(max_depth = coef[0], min_samples_split = coef[1], 
+                                       max_leaf_nodes = coef[2], min_samples_leaf = coef[3],
+                                       n_estimators = coef[4], max_samples = coef[5],
+                                       max_features = coef[6])
+
+##Cross Validate
+scores = cross_val_score(estimator = RFmodel,
+                          X = X_train,
+                          y = y_train,
+                          cv = 5,
+                          scoring = 'roc_auc',
+                          verbose = True,
+                          n_jobs=-1)
+
+print('RF CV accuracy scores: %s' % scores)
+print('RF CV accuracy: %.3f +/- %.3f' % (np.mean(scores), np.std(scores))) 
+
+
+##Fitting Model
+print('fitting...')
+RFmodel.fit(X_train,y_train)
+y_predict = RFmodel.predict(X_test)
+y_train_predict = RFmodel.predict(X_train)
+print('RF Train accuracy',accuracy_score(y_train, y_train_predict))
+print('RF Test accuracy',accuracy_score(y_test,y_predict))
+
+#ROC/AUC score
+print('RF Train ROC/AUC Score', roc_auc_score(y_train, RFmodel.predict_proba(X_train)[:,1]))
+print('RF Test ROC/AUC Score', roc_auc_score(y_test, RFmodel.predict_proba(X_test)[:,1]))
+
+#ROC/AUC plotting
+plt.figure(1)
+
+fpr, tpr, thresholds = roc_curve(y_test, RFmodel.predict_proba(X_test)[:,1],drop_intermediate=False)
+
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.0])
+plt.title('ROC curve for Serotonin Classifier')
+plt.xlabel('False Positive Rate (1 - Specificity)')
+plt.ylabel('True Positive Rate (Sensitivity)')
+plt.plot(fpr,tpr,label = 'RForest(area = %0.2f)' 
+         % roc_auc_score(y_test, RFmodel.predict_proba(X_test)[:,1]), color='blue',lw=3)
+
+
+#Best coefficients so far:
+    #coef = [671,10,68,3,650,192,462]
+    
+#Sample code for testing hyperparameters
+# score = 0.75       
+# coef = [671,10,68,3,650,192,462]
+# for ii in range(2,500,10): 
+#         model = RandomForestClassifier(max_depth = coef[0], min_samples_split = coef[1], 
+#                                        max_leaf_nodes = coef[2], min_samples_leaf = coef[3],
+#                                        n_estimators = coef[4], max_samples = coef[5],
+#                                        max_features = ii)
+#         model.fit(X_train,y_train) 
+#         y_predict = model.predict(X_test) 
+#         y_train_predict = model.predict(X_train)
+#         newscore = roc_auc_score(y_test, model.predict_proba(X_test)[:,1])
+#         print(ii,newscore, end="")
+#         if newscore > score:
+#             print(' best so far')
+#             score = newscore
+#         else:
+#             print()
+
+
+
+
+
+##### XGBOOST ALGORITHM #####
+
+print('XGBoost:')
+
+##XGBoost with Optimal HyperParameters
+print("starting modeling career...")
+coef = [2,0.28,150,0.57,0.36,0.1,1,0,0.75,0.42]
+XGBmodel = XGBClassifier(max_depth = coef[0],subsample = coef[1],n_estimators = coef[2],
+                      colsample_bylevel = coef[3], colsample_bytree = coef[4],learning_rate=coef[5], 
+                      min_child_weight = coef[6], random_state = coef[7],reg_alpha = coef[8],
+                      reg_lambda = coef[9])
+
+##Cross Validate
+scores = cross_val_score(estimator = XGBmodel,
+                          X = X_train,
+                          y = y_train,
+                          cv = 5,
+                          scoring = 'roc_auc',
+                          verbose = True,
+                          n_jobs=-1)
+
+print('XGB CV accuracy scores: %s' % scores)
+print('XGB CV accuracy: %.3f +/- %.3f' % (np.mean(scores), np.std(scores))) 
+
+
+##Fitting Model
+print('fitting...')
+XGBmodel.fit(X_train,y_train)
+y_predict = XGBmodel.predict(X_test)
+y_train_predict = XGBmodel.predict(X_train)
+print('XGB Train accuracy',accuracy_score(y_train, y_train_predict))
+print('XGB Test accuracy',accuracy_score(y_test,y_predict))
+
+
+
+#ROC/AUC score
+print('XGB Train ROC/AUC Score', roc_auc_score(y_train, XGBmodel.predict_proba(X_train)[:,1]))
+print('XGB Test ROC/AUC Score', roc_auc_score(y_test, XGBmodel.predict_proba(X_test)[:,1]))
+
+#ROC/AUC plotting
+plt.figure(1)
+
+fpr, tpr, thresholds = roc_curve(y_test, XGBmodel.predict_proba(X_test)[:,1],drop_intermediate=False)
+plt.plot(fpr,tpr,label = 'XGBoost(area = %0.2f)' 
+         % roc_auc_score(y_test, XGBmodel.predict_proba(X_test)[:,1]), color='red',lw=3)
+
+
+        
+#Best coefficients so far:
+    #coef = [2,0.28,150,0.57,0.36,0.1,1,0,0.75,0.42]
+    
+#Sample code for testing hyperparameters
+    # score = 0.7159090909090909       
+    # coef = [2,0.4,150,.8,1,.1,1,0,1,0.5]
+    # for ii in range(2,31): 
+    #     model = XGBClassifier(max_depth = ii,subsample = coef[1],n_estimators = coef[2],
+    #                       colsample_bylevel = coef[3], colsample_bytree = coef[4],learning_rate=coef[5], 
+    #                       min_child_weight = coef[6], random_state = coef[7],reg_alpha = coef[8],
+    #                       reg_lambda = coef[9])
+    #     model.fit(X_train,y_train) 
+    #     y_predict = model.predict(X_test) 
+    #     y_train_predict = model.predict(X_train)
+    #     newscore = roc_auc_score(y_test, model.predict_proba(X_test)[:,1])
+    #     print(ii,newscore, end="")
+    #     if newscore > score:
+    #         print(' best so far')
+    #         score = newscore
+    #     else:
+    #         print()
+    
+### XGBoost MODEL PREDICTION ###
+### Fitting Model ###
+fitted = XGBmodel.fit(X_train,y_train)
+y_score = XGBmodel.fit(X_train,y_train).predict_proba(X_test)
+
+predictions = fitted.predict(X_test)   
+
+# predict_im = data_to_img(boolim2_2,predictfions)
+SVM.overlay_predictions(image, train_bool, predictions, y_test, ind_test,domains)
+
+
+##### KNN ALGORITHM #####
+
+
+print('KNN:')
+pipe_knn = make_pipeline(RobustScaler(),KNeighborsClassifier())
+
 #SVM MODEL FITTING
 #we create an instance of SVM and fit out data.
 # print("starting modeling career...")
+
+# gs = GridSearchCV(estimator = pipe_knn,
+#                   param_grid = param_grid,
+#                   scoring = 'roc_auc',
+#                   cv = 5,
+#                   n_jobs = -1,
+#                   verbose = 10)
+
+
+# print("Fitting...")
+# gs = gs.fit(X_train,y_train)
+# print('best score: ' + str(gs.best_score_))
+# print(gs.best_params_)
+# pipe_knn = gs.best_estimator_
+### END Gridsearch ####
+
+### Setting Parameters ###
+#{'kneighborsclassifier__n_neighbors': 7}
+print('fitting...')
+
+pipe_knn.set_params(kneighborsclassifier__n_neighbors = 7)
+
+### Cross Validate ###
+scores = cross_val_score(estimator = pipe_knn,
+                          X = X_train,
+                          y = y_train,
+                          cv = 10,
+                          scoring = 'roc_auc',
+                          verbose = True,
+                          n_jobs=-1)
+
+print('CV accuracy scores: %s' % scores)
+print('CV accuracy: %.3f +/- %.3f' % (np.mean(scores), np.std(scores))) 
+
+### Fitting Model ###
+fitted = pipe_knn.fit(X_train,y_train)
+y_score = pipe_knn.fit(X_train,y_train).predict_proba(X_test)
+print(pipe_knn.score(X_test,y_test))
+
+### DATA PROCESSING IMAGE 2 ###
+#pick a test image
+# os.chdir(r'C:\Users\jsalm\Documents\Python Scripts\SVM_7232020')
+Test_im = np.array(cv2.imread("images_5HT/injured 60s_sectioned_CH2.tif")[:,:,2]/255).astype(np.float32)
+
+#extract features
+# im_segs_test, _, domains_test, paded_im_seg_test, _, hog_features_test = SVM.feature_extract(Test_im, ff_width, wiener_size, med_size,False)
+# X_test = SVM.create_data(im_segs_test,False)
+
+# ### SVM MODEL PREDICTION ###
+# predictions = fitted.predict(X_test)   
+
+# # predict_im = data_to_img(boolim2_2,predictfions)
+# SVM.overlay_predictions(image, train_bool, predictions, y_test, ind_test,domains)
+
+### Confusion Matrix: Save fig if interesting ###
+# confmat = confusion_matrix(y_true = y_test, y_pred=predictions)
+# fig, ax = plt.subplots(figsize=(2.5, 2.5))
+# ax.matshow(confmat, cmap=plt.cm.Blues, alpha=0.3)
+# for i in range(confmat.shape[0]):
+#     for j in range(confmat.shape[1]):
+#         ax.text(x=j, y=i, s=confmat[i, j], va='center', ha='center')
+
+# plt.xlabel('Predicted label')
+# plt.ylabel('True label')
+
+# plt.tight_layout()
+# plt.savefig(os.path.join(save_bin,'confussion_matrix.png'),dpi=200,bbox_inches='tight')
+# plt.show()
+
+### ROC Curve ###
+fpr, tpr,_ = roc_curve(y_test, y_score[:,1])
+roc_auc = auc(fpr, tpr)
+SVM.write_auc(fpr,tpr)
+#fpr,tpr,roc_auc = SVM.read_auc()
+
+
+plt.figure(1)
+
+plt.plot(fpr, tpr, color='lightblue', lw=3, label='KNN (area = %0.2f)' % roc_auc)
+
+
+##### SVM ALGORITHM #####
+
+
+#we create an instance of SVM and fit out data.
+print('SVM:')
+print("starting modeling career...")
 
 # gs = GridSearchCV(estimator = pipe_knn,
 #                   param_grid = param_grid,
@@ -1278,6 +1539,7 @@ Test_im = np.array(cv2.imread("images_5HT/injured 60s_sectioned_CH2.tif")[:,:,2]
 
 ### Confusion Matrix: Save fig if interesting ###
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 confmat = confusion_matrix(y_true = y_test, y_pred=predictions)
 fig, ax = plt.subplots(figsize=(2.5, 2.5))
 ax.matshow(confmat, cmap=plt.cm.Blues, alpha=0.3)
@@ -1292,6 +1554,8 @@ plt.tight_layout()
 #plt.savefig('images/06_09.png', dpi=300)
 plt.show()
 =======
+=======
+>>>>>>> Stashed changes
 # confmat = confusion_matrix(y_true = y_test, y_pred=predictions)
 # fig, ax = plt.subplots(figsize=(2.5, 2.5))
 # ax.matshow(confmat, cmap=plt.cm.Blues, alpha=0.3)
@@ -1305,6 +1569,9 @@ plt.show()
 # plt.tight_layout()
 # plt.savefig(os.path.join(save_bin,'confussion_matrix.png'),dpi=200,bbox_inches='tight')
 # plt.show()
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
 ### ROC Curve ###
@@ -1313,6 +1580,7 @@ roc_auc = auc(fpr, tpr)
 
 plt.figure(1)
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 plt.figure()
 lw = 2
@@ -1324,6 +1592,10 @@ plt.ylim([0.0, 1.05])
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.title('Receiver operating characteristic example')
+=======
+plt.plot(fpr, tpr, color='darkorange',lw=3, label='SVM (area = %0.2f)' % roc_auc)
+plt.plot([0, 1], [0, 1], color='navy', lw=3, linestyle='--')
+>>>>>>> Stashed changes
 =======
 plt.plot(fpr, tpr, color='darkorange',lw=3, label='SVM (area = %0.2f)' % roc_auc)
 plt.plot([0, 1], [0, 1], color='navy', lw=3, linestyle='--')
