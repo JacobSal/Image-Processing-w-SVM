@@ -16,14 +16,16 @@ from sklearn.svm import SVC
 from sklearn.model_selection import cross_val_score, train_test_split, learning_curve, GridSearchCV
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler, LabelEncoder
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix,auc
 from sklearn.decomposition import PCA
 from skimage.feature import hog
 from matplotlib.colors import ListedColormap
+from matplotlib.patches import Patch, Rectangle
 
 import cv2
 import os
 import time
+import csv
 
 import Filters
 import DataManager
@@ -35,6 +37,9 @@ from IPython import get_ipython
 plt.rcParams['figure.dpi'] = 100
 plt.rcParams['figure.figsize'] = (10,10)
 get_ipython().run_line_magic('matplotlib','qt5')
+
+dirname = os.path.dirname(__file__)
+save_bin = os.path.join(dirname,"save_bin")
 
 global data,labels
 
@@ -413,15 +418,44 @@ def gen_mask(image):
     return np.ma.masked_where(~mask, mask)
 
 def overlay_predictions(image,boolim,preds,y_test,ind_test,f,**kwargs):
+    """
+    
+
+    Parameters
+    ----------
+    image : np.array(float64)
+        image being anlazyed
+    boolim : np.array(bool)
+        label data that was used to train algorithm
+    preds : np.
+        DESCRIPTION.
+    y_test : TYPE
+        DESCRIPTION.
+    ind_test : TYPE
+        DESCRIPTION.
+    f : TYPE
+        DESCRIPTION.
+    **kwargs : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    int
+        DESCRIPTION.
+
+    """
     nH= image.shape[0]
     nW= image.shape[1]
     pred_im = np.zeros((nH,nW)).astype(np.float32)
     # true_im = np.zeros((nH,nW)).astype(np.float32)
     
     
-    plt.figure("Overlayed Predictions for Test Domain")  
+    plt.figure("Overlayed Predictions for Test Domain",figsize = (nH/100,nW/100))  
     plt.imshow(image, **kwargs)
-    
+    legend_ele = [Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor='none', linewidth=0,label = "label: (actual,predict)"),
+                  Patch(facecolor = "red",label = "segmented"),
+                  Patch(facecolor = "orange",label = "training data")]
+    # plt.set_size_inches(nH/100,nW/100)
     for ind in range(0,len(ind_test)):
         i = ind_test[ind]
         y1 = f[i][0].start
@@ -429,17 +463,38 @@ def overlay_predictions(image,boolim,preds,y_test,ind_test,f,**kwargs):
         x1 = f[i][1].start
         x2 = f[i][1].stop
         pred_im[y1:y2,x1:x2] = np.ones((y2-y1,x2-x1))
-        s = "y_true: {} and prediction: {}".format(y_test[ind],preds[ind])
+        s = "({0},{1})".format(y_test[ind],preds[ind])
         plt.text(x1, y1-5, s, fontsize = 10, bbox=dict(fill=False, edgecolor='none', linewidth=2))
-    
+    plt.legend(handles = legend_ele, loc = 'lower right')
 
     
     plt.imshow(gen_mask(pred_im), alpha=0.3, cmap=ListedColormap(['red']))
-    plt.imshow(gen_mask(boolim), alpha=0.7, cmap=ListedColormap(['orange']))
+    plt.imshow(gen_mask(boolim), alpha=0.5, cmap=ListedColormap(['orange']))
+    plt.savefig(os.path.join(save_bin,'overlayed_predictions.tif'),dpi=200,bbox_inches='tight')
+    return 0
+
+def write_auc(fpr,tpr):
+    with open(os.path.join(dirname,'save_bin\\svm_auc_roc.csv'),'w',newline='') as csvfile:
+        spamwriter = csv.writer(csvfile,delimiter=' ',
+                                quotechar='|',quoting=csv.QUOTE_MINIMAL)
+        for i in range(len(fpr)):
+            spamwriter.writerow([fpr[i],tpr[i]])
+    return 0
     
-    'end for'
-    
-    
+def read_auc():
+    fpr = []
+    tpr = []
+    with open(os.path.join(dirname,'save_bin/svm_auc_roc.csv'),'r',newline='') as csvfile:
+        spamreader = csv.reader(csvfile,delimiter=' ',
+                                quotechar='|')
+        for row in spamreader:
+            fpr.append(float(row[0]))
+            tpr.append(float(row[1]))
+        
+    fpr = np.array(fpr)
+    tpr = np.array(tpr)
+    roc_auc = auc(fpr, tpr)
+    return fpr,tpr,roc_auc
 
 import random
 
